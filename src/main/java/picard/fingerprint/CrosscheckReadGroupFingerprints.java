@@ -25,8 +25,8 @@
 
 package picard.fingerprint;
 
-import picard.cmdline.CommandLineProgramProperties;
-import picard.cmdline.Option;
+import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
 import picard.cmdline.programgroups.Fingerprinting;
 
 import java.io.File;
@@ -40,8 +40,8 @@ import java.util.List;
  * @author Tim Fennell
  */
 @CommandLineProgramProperties(
-        usage = "DEPRECATED: USE CrosscheckFingerprints. Checks if all read groups within a set of BAM files appear to come from the same individual",
-        usageShort = "DEPRECATED: USE CrosscheckFingerprints. Checks if all read groups appear to come from the same individual.",
+        summary = "DEPRECATED: USE CrosscheckFingerprints. Checks if all read groups within a set of BAM files appear to come from the same individual",
+        oneLineSummary = "DEPRECATED: USE CrosscheckFingerprints. Checks if all read groups appear to come from the same individual.",
         programGroup = Fingerprinting.class
 )
 /**
@@ -52,11 +52,11 @@ import java.util.List;
 public class CrosscheckReadGroupFingerprints extends CrosscheckFingerprints {
 
 
-    @Option(doc = "Instead of producing the normal comparison of read-groups, roll fingerprints up to the sample level " +
+    @Argument(doc = "Instead of producing the normal comparison of read-groups, roll fingerprints up to the sample level " +
             "and print out a sample x sample matrix with LOD scores.")
     public boolean CROSSCHECK_SAMPLES = false;
 
-    @Option(doc = "Instead of producing the normal comparison of read-groups, roll fingerprints up to the library level " +
+    @Argument(doc = "Instead of producing the normal comparison of read-groups, roll fingerprints up to the library level " +
             "and print out a library x library matrix with LOD scores.")
     public boolean CROSSCHECK_LIBRARIES = false;
 
@@ -99,4 +99,3 @@ public class CrosscheckReadGroupFingerprints extends CrosscheckFingerprints {
         return super.doWork();
     }
 }
-     
