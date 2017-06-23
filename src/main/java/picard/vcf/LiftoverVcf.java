@@ -138,7 +138,7 @@ public class LiftoverVcf extends CommandLineProgram {
     private SortingCollection<VariantContext> sorter;
 
     @Override
-    protected ReferenceArgumentCollection getReferenceArgumentCollection() {
+    protected ReferenceArgumentCollection makeReferenceArgumentCollection() {
         return new ReferenceArgumentCollection() {
             @Argument(shortName = StandardOptionDefinitions.REFERENCE_SHORT_NAME, common=false,
                     doc = "The reference sequence (fasta) for the TARGET genome build.  The fasta file must have an " +

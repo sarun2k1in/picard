@@ -57,7 +57,7 @@ final javadocJDKFiles = files(((URLClassLoader) ToolProvider.getSystemToolClassL
 dependencies {
     compile 'com.google.guava:guava:15.0'
     compile 'com.github.samtools:htsjdk:' + htsjdkVersion
-    compile 'org.broadinstitute:barclay:1.0.0-26-ga9a3f67-SNAPSHOT'
+    compile 'org.broadinstitute:barclay:1.1.0'
 
     // javadoc utilities; compile/test only to prevent redistribution of sdk jars
     compileOnly(javadocJDKFiles)
@@ -80,6 +80,17 @@ defaultTasks 'all'
 
 task all(dependsOn: ['jar', 'distZip', 'javadoc', 'shadowJar', 'barclayJar', 'currentJar'])
 
+// Source file names for the picard command line properties file. We select and include one
+// or the other of these source property files, renamed as "picardCmdLine.properties",
+// depending on which jar we're building.
+final String legacySourcePropertyFile = 'legacyParserProperties.properties'
+final String barclaySourcePropertyFile = 'barclayParserProperties.properties'
+
+// Target name/location for the picard command line properties file; one of the above source
+// files will ne included at this path/location for runtime access
+final String picardTargetPropertiesPath = 'picard'
+final String picardTargetPropertyFile = 'picardCmdLine.properties'
+
 jar {
     manifest {
         attributes 'Main-Class': 'picard.cmdline.PicardCommandLine',
@@ -87,6 +98,15 @@ jar {
                 'Implementation-Vendor': 'Broad Institute',
                 'Implementation-Version': version
     }
+    from('src/main/resources/properties.templates') {
+        // for the default jar, we want the properties file that enables the picard parser
+        include legacySourcePropertyFile
+        into picardTargetPropertiesPath
+        rename { String fileName ->
+            fileName.replace(legacySourcePropertyFile, picardTargetPropertyFile)
+        }
+    }
+    exclude('src/main/resources/properties.templates/**')
 }
 
 tasks.withType(Javadoc) {
@@ -135,24 +155,22 @@ task currentJar(type: Copy){
     rename { string -> "picard.jar"}
 }
 
-// Target resource path and file name for the picard command line properties resource
-final String picardCmdLinePropertiesPath = 'picard'
-final String picardCmdLinePropertiesFileName = 'picardCmdLine.properties'
-
 shadowJar {
     finalizedBy currentJar
     from('src/main/resources/properties.templates') {
         // for the default jar, we want the properties file that enables the picard parser
-        include 'legacyParserProperties.properties'
-        into picardCmdLinePropertiesPath
-        rename { string -> picardCmdLinePropertiesFileName }
+        include legacySourcePropertyFile
+        into picardTargetPropertiesPath
+        rename { String fileName ->
+            fileName.replace(legacySourcePropertyFile, picardTargetPropertyFile)
+        }
     }
     exclude('src/main/resources/properties.templates/**')
 }
 
 // Create picardBarclay.jar, which is identical to picard.jar, but contains a .properties
 // file that tells Picard to use the Barclay command line parser instead of the Picard
-//  command line parser.
+// command line parser.
 //
 task barclayJar(type: com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar)  {
     configurations = [project.configurations.runtime]
@@ -161,13 +179,15 @@ task barclayJar(type: com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
         inheritFrom project.tasks.jar.manifest
     }
     from('src/main/resources/properties.templates') {
-        // for the barclay jar, we want the properties file that enables the barclay parser
-        include 'barclayParserProperties.properties'
-        into picardCmdLinePropertiesPath
-        rename { string -> picardCmdLinePropertiesFileName }
+        // for the default jar, we want the properties file that enables the picard parser
+        include barclaySourcePropertyFile
+        into picardTargetPropertiesPath
+        rename { String fileName ->
+            fileName.replace(barclaySourcePropertyFile, picardTargetPropertyFile)
+        }
     }
-    exclude('META-INF/INDEX.LIST', 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA')
     exclude('src/main/resources/properties.templates/**')
+    exclude('META-INF/INDEX.LIST', 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA')
     archiveName 'picardBarclay.jar'
 }
 
@@ -250,8 +270,10 @@ task sourcesJar(type: Jar) {
  * This specifies what artifacts will be built and uploaded when performing a maven upload.
  */
 artifacts {
-    archives jar
+    // Make sure the barclayJar is listed first to prevent it from being chosen as the one to be
+    // installed under the snapshot name in the local maven repository when doing "./gradlew install".
     archives barclayJar
+    archives jar
     archives javadocJar
     archives sourcesJar
 }
